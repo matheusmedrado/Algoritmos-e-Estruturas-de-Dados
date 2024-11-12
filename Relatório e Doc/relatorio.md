@@ -813,6 +813,13 @@ void converterMinusculo(char *str)
 ### 13. Apresentação de Informações
 
 ```c
+/**
+ * @brief Apresenta informações iniciais e obtém consentimento do usuário
+ *
+ * Esta função exibe as informações iniciais do sistema e solicita
+ * o consentimento do usuário para continuar. Se o usuário não
+ * concordar, o programa é encerrado.
+ */
 void apresentarInformacoes()
 {
     printf("\n=== Sistema de Gerenciamento de Rodovias ===\n\n");
@@ -823,8 +830,21 @@ void apresentarInformacoes()
     printf("4. Calcular rotas e custos\n");
     printf("5. Identificar cruzamentos entre rodovias\n\n");
 
-    printf("Pressione ENTER para continuar...");
-    getchar();
+    printf("Antes de começar, algumas recomendações:\n");
+    printf("- Use nomes claros e consistentes\n");
+    printf("- Evite caracteres especiais\n");
+    printf("- Mantenha backup dos dados\n\n");
+
+    printf("Deseja continuar? (1-Sim/0-Não): ");
+    int resposta;
+    scanf("%d", &resposta);
+    getchar(); // Limpa o buffer
+
+    if (resposta != 1)
+    {
+        printf("\nPrograma encerrado pelo usuário.\n");
+        exit(0);
+    }
 
     // Limpa a tela após apresentação
     #ifdef _WIN32
@@ -832,279 +852,412 @@ void apresentarInformacoes()
     #else
         system("clear");
     #endif
+
+    menu(); // Chama o menu principal
 }
 ```
 
-**Propósito**: Apresenta informações iniciais do sistema ao usuário.
+**Propósito**: Apresenta informações iniciais do sistema e obtém consentimento do usuário para continuar.
 
-**Complexidade**: O(1) - operação constante.
+**Complexidade**: O(1) - operações constantes.
 
 **Detalhes de Implementação**:
 
 1. Exibe mensagem de boas-vindas
 2. Lista funcionalidades principais
-3. Aguarda interação do usuário
-4. Limpa a tela de forma compatível com diferentes sistemas operacionais
+3. Solicita confirmação do usuário
+4. Direciona para o menu principal ou encerra o programa
 
 ### 14. Menu Principal
 
 ```c
+/**
+ * @brief Função principal do menu que gerencia todas as operações do sistema
+ *
+ * Esta função implementa o menu interativo principal do sistema, permitindo ao usuário:
+ * - Carregar dados de um arquivo existente
+ * - Realizar operações de gerenciamento de rodovias
+ * - Salvar alterações em arquivo
+ * - Gerenciar a memória do sistema
+ */
 void menu()
 {
-    Rodovia *listaRodovias = NULL;
-    int opcao;
-    char nomeArquivo[100];
-    char nomeRodovia[50];
-    char nomeCidade[50];
-    float distancia, pedagio;
-    char cidadeInicio[50], cidadeFim[50];
-    char cidade1[50], cidade2[50];
+    // Inicialização de variáveis
+    int opcao = -1;                    // Opção escolhida pelo usuário
+    Rodovia *listaRodovias = NULL;     // Lista principal de rodovias
+    char nomeRodovia[50];              // Buffer para nome de rodovia
+    char nomeCidade[50];               // Buffer para nome de cidade
+    float distancia;                   // Variável para distância
+    char rodovia1[50], rodovia2[50];   // Buffers para comparação de rodovias
+    Rodovia *r1, *r2;                  // Ponteiros para rodovias
+    Rodovia *rodovia;                  // Ponteiro auxiliar
+    char nomeArquivo[50] = "";         // Nome do arquivo para operações de I/O
 
-    do {
-        printf("\n=== Menu Principal ===\n");
-        printf("1. Carregar dados de arquivo\n");
-        printf("2. Adicionar nova rodovia\n");
-        printf("3. Adicionar cidade a uma rodovia\n");
-        printf("4. Adicionar pedágio\n");
-        printf("5. Calcular percurso\n");
-        printf("6. Listar cruzamentos\n");
-        printf("7. Salvar dados em arquivo\n");
-        printf("8. Imprimir todas as rodovias\n");
+    // Escolha inicial: arquivo novo ou existente
+    printf("\nDeseja iniciar o programa com um arquivo em branco ou carregar um arquivo com os dados já existente?\n");
+    printf("0 para começar em branco, 1 para carregar um arquivo com os dados:\n");
+    int escolha;
+    scanf("%d", &escolha);
+    getchar(); // Limpa o buffer do teclado
+
+    // Carregamento de arquivo existente
+    if (escolha == 1)
+    {
+        printf("Insira o nome do arquivo para carregar os dados (ex: rodovias.txt): ");
+        scanf("%49s", nomeArquivo);
+        getchar();
+        carregarRodoviasDeArquivo(&listaRodovias, nomeArquivo);
+    }
+
+    // Loop principal do menu
+    while (opcao != 0)
+    {
+        // Exibição das opções do menu
+        printf("\n-> Escolha uma opcao:\n");
+        printf("1. Inserir rodovia\n");
+        printf("2. Remover rodovia\n");
+        printf("3. Inserir cidade em rodovia \n");
+        printf("4. Remover cidade de rodovia\n");
+        printf("5. Ver percurso entre duas cidades\n");
+        printf("6. Verificar cruzamento entre todas as rodovias\n");
+        printf("7. Imprimir lista de rodovias\n");
+        printf("8. Salvar lista em arquivo\n");
+        printf("9. Listar todos os cruzamentos entre duas rodovias específicas\n");
+        printf("10. Salvar alterações no arquivo atual\n");
         printf("0. Sair\n");
-        printf("\nEscolha uma opção: ");
         scanf("%d", &opcao);
-        getchar(); // Limpa o buffer
+        getchar();
 
-        switch(opcao) {
-            case 1:
-                // Carregamento de dados de arquivo
-                printf("Digite o nome do arquivo: ");
-                fgets(nomeArquivo, sizeof(nomeArquivo), stdin);
-                nomeArquivo[strcspn(nomeArquivo, "\n")] = 0; // Remove quebra de linha
-                carregarRodoviasDeArquivo(&listaRodovias, nomeArquivo);
-                break;
+        // Estrutura de decisão para as opções do menu
+        switch (opcao)
+        {
+        case 1: // Inserção de nova rodovia
+            printf("\nDigite o nome da rodovia: ");
+            fgets(nomeRodovia, 50, stdin);
+            nomeRodovia[strcspn(nomeRodovia, "\n")] = 0; // Remove quebra de linha
+            listaRodovias = inserirRodovia(listaRodovias, nomeRodovia);
+            break;
 
-            case 2:
-                // Adição de nova rodovia
-                printf("Digite o nome da rodovia: ");
-                fgets(nomeRodovia, sizeof(nomeRodovia), stdin);
-                nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
-                Rodovia *novaRodovia = inserirRodovia(listaRodovias, nomeRodovia);
-                if (novaRodovia != NULL) {
-                    listaRodovias = novaRodovia; // Atualiza início da lista
-                    printf("Rodovia '%s' adicionada com sucesso!\n", nomeRodovia);
+        case 2: // Remoção de rodovia existente
+            printf("\nDigite o nome da rodovia a ser removida: ");
+            fgets(nomeRodovia, 50, stdin);
+            nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
+            listaRodovias = removerRodovia(listaRodovias, nomeRodovia);
+            break;
+
+        case 3: // Inserção de cidade em rodovia
+            printf("\nDigite o nome da rodovia: ");
+            fgets(nomeRodovia, 50, stdin);
+            nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
+            rodovia = buscarRodovia(listaRodovias, nomeRodovia);
+            if (rodovia != NULL)
+            {
+                printf("Digite o nome da cidade: ");
+                fgets(nomeCidade, 50, stdin);
+                nomeCidade[strcspn(nomeCidade, "\n")] = 0;
+                printf("Digite a distância do início da rodovia: ");
+                scanf("%f", &distancia);
+                getchar();
+                inserirCidade(rodovia, nomeCidade, distancia);
+            }
+            else
+            {
+                printf("Rodovia não encontrada!\n");
+            }
+            break;
+
+        case 4: // Remoção de cidade de rodovia
+            printf("\nDigite o nome da rodovia: ");
+            fgets(nomeRodovia, 50, stdin);
+            nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
+            rodovia = buscarRodovia(listaRodovias, nomeRodovia);
+            if (rodovia != NULL)
+            {
+                printf("Digite o nome da cidade a ser removida: ");
+                fgets(nomeCidade, 50, stdin);
+                nomeCidade[strcspn(nomeCidade, "\n")] = 0;
+                removerCidade(rodovia, nomeCidade);
+            }
+            else
+            {
+                printf("Rodovia não encontrada!\n");
+            }
+            break;
+
+        case 5: // Cálculo de percurso entre cidades
+            printf("\nDigite a cidade de origem: ");
+            fgets(nomeCidade, 50, stdin);
+            char cidadeDestino[50];
+            printf("Digite a cidade de destino: ");
+            fgets(cidadeDestino, 50, stdin);
+            // Atualiza conexões antes de calcular percurso
+            conectarRodovias(listaRodovias);
+            percursoEntreRodovias(listaRodovias, nomeCidade, cidadeDestino);
+            break;
+
+        case 6: // Verificação de cruzamentos entre rodovias
+            conectarRodovias(listaRodovias);
+            printf("\nCruzamentos entre rodovias:\n");
+            // Compara cada rodovia com todas as outras
+            for (r1 = listaRodovias; r1 != NULL; r1 = r1->proxima)
+            {
+                for (r2 = r1->proxima; r2 != NULL; r2 = r2->proxima)
+                {
+                    listarCruzamentos(r1, r2);
                 }
-                break;
+            }
+            break;
 
-            case 3:
-                // Adição de cidade a uma rodovia
-                printf("Digite o nome da rodovia: ");
-                fgets(nomeRodovia, sizeof(nomeRodovia), stdin);
-                nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
+        case 7: // Impressão da lista de rodovias
+            imprimirRodovias(listaRodovias);
+            break;
 
-                Rodovia *rodovia = buscarRodovia(listaRodovias, nomeRodovia);
-                if (rodovia != NULL) {
-                    printf("Digite o nome da cidade: ");
-                    fgets(nomeCidade, sizeof(nomeCidade), stdin);
-                    nomeCidade[strcspn(nomeCidade, "\n")] = 0;
+        case 8: // Salvamento em novo arquivo
+            printf("\nDigite o nome do arquivo para salvar: ");
+            scanf("%49s", nomeArquivo);
+            getchar();
+            salvarRodoviasArquivo(listaRodovias, nomeArquivo);
+            break;
 
-                    printf("Digite a distância (km): ");
-                    scanf("%f", &distancia);
-                    getchar(); // Limpa o buffer
+        case 9: // Listagem de cruzamentos específicos
+            printf("\nDigite o nome da primeira rodovia: ");
+            fgets(rodovia1, 50, stdin);
+            rodovia1[strcspn(rodovia1, "\n")] = 0;
+            printf("Digite o nome da segunda rodovia: ");
+            fgets(rodovia2, 50, stdin);
+            rodovia2[strcspn(rodovia2, "\n")] = 0;
 
-                    if (inserirCidade(rodovia, nomeCidade, distancia) != NULL) {
-                        printf("Cidade '%s' adicionada com sucesso!\n", nomeCidade);
-                    }
-                } else {
-                    printf("Rodovia não encontrada!\n");
-                }
-                break;
+            r1 = buscarRodovia(listaRodovias, rodovia1);
+            r2 = buscarRodovia(listaRodovias, rodovia2);
 
-            case 4:
-                // Adição de pedágio entre cidades
-                printf("Digite o nome da rodovia: ");
-                fgets(nomeRodovia, sizeof(nomeRodovia), stdin);
-                nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
+            if (r1 && r2)
+            {
+                listarCruzamentosEspecificos(r1, r2);
+            }
+            else
+            {
+                printf("Uma ou ambas as rodovias não foram encontradas!\n");
+            }
+            break;
 
-                rodovia = buscarRodovia(listaRodovias, nomeRodovia);
-                if (rodovia != NULL) {
-                    printf("Digite o nome da primeira cidade: ");
-                    fgets(cidade1, sizeof(cidade1), stdin);
-                    cidade1[strcspn(cidade1, "\n")] = 0;
-
-                    printf("Digite o nome da segunda cidade: ");
-                    fgets(cidade2, sizeof(cidade2), stdin);
-                    cidade2[strcspn(cidade2, "\n")] = 0;
-
-                    printf("Digite o valor do pedágio: R$ ");
-                    scanf("%f", &pedagio);
-                    getchar();
-
-                    adicionarPedagio(rodovia, cidade1, cidade2, pedagio);
-                } else {
-                    printf("Rodovia não encontrada!\n");
-                }
-                break;
-
-            case 5:
-                // Cálculo de percurso entre cidades
-                printf("Digite a cidade de origem: ");
-                fgets(cidadeInicio, sizeof(cidadeInicio), stdin);
-
-                printf("Digite a cidade de destino: ");
-                fgets(cidadeFim, sizeof(cidadeFim), stdin);
-
-                // Atualiza conexões entre rodovias antes de calcular percurso
-                conectarRodovias(listaRodovias);
-                percursoEntreRodovias(listaRodovias, cidadeInicio, cidadeFim);
-                break;
-
-            case 6:
-                // Listagem de cruzamentos entre rodovias
-                conectarRodovias(listaRodovias); // Atualiza conexões
-                listarCruzamentos(listaRodovias);
-                break;
-
-            case 7:
-                // Salvamento de dados em arquivo
-                printf("Digite o nome do arquivo para salvar: ");
-                fgets(nomeArquivo, sizeof(nomeArquivo), stdin);
-                nomeArquivo[strcspn(nomeArquivo, "\n")] = 0;
+        case 10: // Salvamento no arquivo atual
+            if (strlen(nomeArquivo) > 0)
+            {
                 salvarRodoviasArquivo(listaRodovias, nomeArquivo);
-                break;
+                printf("Alterações salvas com sucesso em '%s'!\n", nomeArquivo);
+            }
+            else
+            {
+                printf("Nenhum arquivo especificado anteriormente!\n");
+            }
+            break;
 
-            case 8:
-                // Impressão de todas as rodovias
-                imprimirRodovias(listaRodovias);
-                break;
+        case 0: // Saída do programa
+            break;
 
-            case 0:
-                // Saída do programa
-                printf("Encerrando o programa...\n");
-                break;
-
-            default:
-                // Opção inválida
-                printf("Opção inválida! Por favor, tente novamente.\n");
-                break;
+        default: // Opção inválida
+            printf("Opção inválida! Por favor, tente novamente.\n");
+            break;
         }
-    } while (opcao != 0);
+    }
+
+    // Verificação final para salvar alterações
+    if (strlen(nomeArquivo) > 0)
+    {
+        printf("\nDeseja salvar as alterações antes de sair? (1-Sim, 0-Não): ");
+        int salvar;
+        scanf("%d", &salvar);
+        if (salvar == 1)
+        {
+            imprimirRodoviasEmArquivo(listaRodovias, nomeArquivo);
+            printf("Alterações salvas com sucesso em '%s'!\n", nomeArquivo);
+        }
+    }
+
+    // Liberação da memória alocada
+    liberarMemoria(listaRodovias);
+    printf("Saindo...\n");
 }
 ```
 
-**Detalhamento dos Casos**:
+**Propósito**: Implementa o menu principal do sistema, gerenciando todas as operações disponíveis para o usuário.
 
-1. **Carregar dados de arquivo**
+**Complexidade**: O(n) para operações básicas, onde n é o número de rodovias ou cidades, dependendo da operação.
 
-   - Solicita nome do arquivo
-   - Remove quebra de linha do input
-   - Chama função de carregamento
-   - Atualiza lista principal de rodovias
+**Detalhes de Implementação**:
 
-2. **Adicionar nova rodovia**
+1. Gerenciamento de entrada/saída
 
-   - Solicita nome da rodovia
-   - Trata string removendo quebra de linha
-   - Insere nova rodovia no início da lista
-   - Confirma sucesso da operação
+   - Leitura de opções do usuário
+   - Tratamento de strings com fgets
+   - Limpeza de buffer após leituras
 
-3. **Adicionar cidade**
+2. Controle de fluxo
 
-   - Solicita nome da rodovia
-   - Busca rodovia na lista
-   - Se encontrada, solicita dados da cidade (nome e distância)
-   - Insere cidade na rodovia mantendo ordem por distância
+   - Loop principal do menu
+   - Switch case para diferentes operações
+   - Verificações de erro
 
-4. **Adicionar pedágio**
+3. Manipulação de dados
 
-   - Solicita nome da rodovia
-   - Busca rodovia na lista
-   - Solicita nomes das duas cidades e valor do pedágio
-   - Adiciona pedágio entre as cidades especificadas
+   - Operações com rodovias e cidades
+   - Salvamento e carregamento de arquivos
+   - Gerenciamento de memória
 
-5. **Calcular percurso**
+4. Interface com usuário
+   - Menu interativo
+   - Mensagens informativas
+   - Confirmações de operações
 
-   - Solicita cidades de origem e destino
-   - Atualiza conexões entre rodovias antes de calcular percurso
-   - Calcula e exibe percurso completo com custos
+**Case 1 - Inserir Rodovia**
 
-6. **Listar cruzamentos**
+- Solicita ao usuário o nome da nova rodovia
+- Remove a quebra de linha do input usando strcspn
+- Chama a função inserirRodovia para adicionar à lista
+- Retorna a lista atualizada
 
-   - Atualiza conexões entre rodovias
-   - Lista todos os pontos de cruzamento
-   - Exibe distâncias em cada rodovia
+**Case 2 - Remover Rodovia**
 
-7. **Salvar dados**
+- Solicita o nome da rodovia a ser removida
+- Remove a quebra de linha do input
+- Chama a função removerRodovia
+- Atualiza a lista principal
 
-   - Solicita nome do arquivo
-   - Salva toda a estrutura de dados
-   - Confirma operação
+**Case 3 - Inserir Cidade**
 
-8. **Imprimir rodovias**
+- Solicita nome da rodovia onde a cidade será inserida
+- Busca a rodovia na lista
+- Se encontrada:
+  - Solicita nome da cidade
+  - Solicita distância do início da rodovia
+  - Insere a cidade na rodovia
+- Se não encontrada: exibe mensagem de erro
 
-   - Exibe todas as informações cadastradas no sistema de forma organizada
-   - Mostra cidades e pedágios
-   - Apresenta informações detalhadas
+**Case 4 - Remover Cidade**
 
-9. **Sair**
-   - Encerra o loop principal
-   - Finaliza o programa
+- Solicita nome da rodovia
+- Busca a rodovia na lista
+- Se encontrada:
+  - Solicita nome da cidade a remover
+  - Remove a cidade especificada
+- Se não encontrada: exibe mensagem de erro
 
-**Default**
+**Case 5 - Percurso Entre Cidades**
 
-- Trata entradas inválidas
-- Solicita nova tentativa
+- Solicita cidade de origem
+- Solicita cidade de destino
+- Atualiza conexões entre rodovias
+- Calcula e exibe o percurso
+
+**Case 6 - Verificar Cruzamentos**
+
+- Atualiza conexões entre rodovias
+- Compara todas as rodovias entre si
+- Lista todos os pontos de cruzamento encontrados
+
+**Case 7 - Imprimir Rodovias**
+
+- Exibe lista completa de rodovias
+- Mostra cidades e distâncias
+- Exibe informações de pedágios
+
+**Case 8 - Salvar em Novo Arquivo**
+
+- Solicita nome do novo arquivo
+- Salva toda a estrutura de dados
+- Confirma o salvamento
+
+**Case 9 - Listar Cruzamentos Específicos**
+
+- Solicita nomes das duas rodovias
+- Busca as rodovias na lista
+- Se ambas encontradas:
+  - Lista cruzamentos entre elas
+- Se não encontradas: exibe erro
+
+**Case 10 - Salvar no Arquivo Atual**
+
+- Verifica se existe arquivo atual
+- Se existe: salva alterações
+- Se não existe: exibe mensagem de erro
 
 ### 15. Listagem de Cruzamentos
 
 ```c
-void listarCruzamentos(Rodovia *listaRodovias)
+void listarCruzamentos(Rodovia *rodovia1, Rodovia *rodovia2)
 {
-    if (listaRodovias == NULL) {
-        printf("Nenhuma rodovia cadastrada.\n");
+    // Validação inicial dos parâmetros
+    if (rodovia1 == NULL || rodovia2 == NULL)
+    {
+        printf("Uma ou ambas as rodovias não foram encontradas!\n");
         return;
     }
 
-    printf("\n=== Cruzamentos entre Rodovias ===\n");
+    printf("\nPontos de cruzamento entre %s e %s:\n",
+           rodovia1->nome, rodovia2->nome);
 
-    // Para cada rodovia
-    for (Rodovia *r1 = listaRodovias; r1 != NULL; r1 = r1->proxima) {
-        // Compara com todas as outras rodovias
-        for (Rodovia *r2 = r1->proxima; r2 != NULL; r2 = r2->proxima) {
-            int encontrouCruzamento = 0;
+    Cidade *cidadeRodovia1 = rodovia1->cidades;
+    int encontrouCruzamento = 0;
+    char cidade1Lower[50], cidade2Lower[50];
 
-            // Para cada cidade da primeira rodovia
-            for (Cidade *c1 = r1->cidades; c1 != NULL; c1 = c1->proxima) {
-                // Compara com cada cidade da segunda rodovia
-                for (Cidade *c2 = r2->cidades; c2 != NULL; c2 = c2->proxima) {
-                    // Se encontrar cidade em comum
-                    if (strcmp(c1->nomeCidade, c2->nomeCidade) == 0) {
-                        if (!encontrouCruzamento) {
-                            printf("\nCruzamento entre %s e %s:\n",
-                                   r1->nome, r2->nome);
-                            encontrouCruzamento = 1;
-                        }
-                        printf("- Cidade: %s (Distância em %s: %.2f km, em %s: %.2f km)\n",
-                               c1->nomeCidade, r1->nome, c1->distancia,
-                               r2->nome, c2->distancia);
-                    }
-                }
+    // Percorre todas as cidades da primeira rodovia
+    while (cidadeRodovia1 != NULL)
+    {
+        Cidade *cidadeRodovia2 = rodovia2->cidades;
+        strcpy(cidade1Lower, cidadeRodovia1->nomeCidade);
+        converterMinusculo(cidade1Lower);
+
+        // Compara com cada cidade da segunda rodovia
+        while (cidadeRodovia2 != NULL)
+        {
+            strcpy(cidade2Lower, cidadeRodovia2->nomeCidade);
+            converterMinusculo(cidade2Lower);
+
+            // Se encontrar cidade em comum
+            if (strcmp(cidade1Lower, cidade2Lower) == 0)
+            {
+                printf("- %s (km %.2f na %s, km %.2f na %s)\n",
+                       cidadeRodovia1->nomeCidade,
+                       cidadeRodovia1->distancia,
+                       rodovia1->nome,
+                       cidadeRodovia2->distancia,
+                       rodovia2->nome);
+                encontrouCruzamento = 1;
             }
+            cidadeRodovia2 = cidadeRodovia2->proxima;
         }
+        cidadeRodovia1 = cidadeRodovia1->proxima;
+    }
+
+    // Se não encontrou nenhum cruzamento
+    if (!encontrouCruzamento)
+    {
+        printf("Nenhum ponto de cruzamento encontrado entre estas rodovias.\n");
     }
 }
 ```
 
-**Propósito**: Identifica e lista todos os pontos de cruzamento entre rodovias.
+**Propósito**: Identifica e lista todos os pontos de cruzamento entre duas rodovias específicas.
 
-**Complexidade**: O(r²\*c²), onde r é o número de rodovias e c é o número médio de cidades por rodovia.
+**Complexidade**: O(n\*m), onde n é o número de cidades na primeira rodovia e m é o número de cidades na segunda rodovia.
 
 **Detalhes de Implementação**:
 
-1. Compara todas as combinações de rodovias
-2. Para cada par de rodovias, procura cidades em comum
-3. Exibe informações detalhadas dos cruzamentos encontrados
-4. Inclui distâncias relativas em cada rodovia
+1. Validação de Entrada
+
+   - Verifica se as rodovias existem
+   - Previne operações com ponteiros nulos
+
+2. Processamento de Dados
+
+   - Compara nomes de cidades de forma case-insensitive
+   - Utiliza buffers temporários para manipulação segura de strings
+   - Mantém controle de cruzamentos encontrados
+
+3. Saída de Dados
+   - Exibe informações detalhadas de cada cruzamento
+   - Inclui quilometragem em cada rodovia
+   - Fornece feedback quando não há cruzamentos
 
 ### 16. Salvar Rodovias em Arquivo
 
@@ -1311,35 +1464,40 @@ void listarCruzamentosEspecificos(Rodovia *rodovia1, Rodovia *rodovia2)
 ### 19. Apresentar Informações e Obter Consentimento
 
 ```c
-void apresentar_informacoes_e_obter_consentimento()
+void apresentarInformacoes()
 {
-    printf("\n=== Bem-vindo ao Sistema de Gerenciamento de Rodovias ===\n\n");
-    printf("Este sistema foi desenvolvido para:\n");
-    printf("- Gerenciar rodovias e suas conexões\n");
-    printf("- Controlar cidades e distâncias\n");
-    printf("- Administrar pedágios\n");
-    printf("- Calcular rotas e custos\n");
-    printf("- Identificar cruzamentos entre rodovias\n\n");
+    printf("\n=== Sistema de Gerenciamento de Rodovias ===\n\n");
+    printf("Este sistema permite:\n");
+    printf("1. Cadastrar e gerenciar rodovias\n");
+    printf("2. Adicionar e remover cidades\n");
+    printf("3. Configurar pedágios\n");
+    printf("4. Calcular rotas e custos\n");
+    printf("5. Identificar cruzamentos entre rodovias\n\n");
 
-    printf("Desenvolvido por: [Nome do Desenvolvedor]\n");
-    printf("Versão: 1.0\n\n");
+    printf("Antes de começar, algumas recomendações:\n");
+    printf("- Use nomes claros e consistentes\n");
+    printf("- Evite caracteres especiais\n");
+    printf("- Mantenha backup dos dados\n\n");
 
-    char resposta;
-    do {
-        printf("Deseja continuar? (S/N): ");
-        scanf(" %c", &resposta);
-        resposta = toupper(resposta);
+    printf("Deseja continuar? (1-Sim/0-Não): ");
+    int resposta;
+    scanf("%d", &resposta);
+    getchar(); // Limpa o buffer
 
-        if (resposta != 'S' && resposta != 'N') {
-            printf("Por favor, responda com S ou N.\n");
-        }
-    } while (resposta != 'S' && resposta != 'N');
-
-    if (resposta == 'S') {
-        menu();
-    } else {
+    if (resposta != 1)
+    {
         printf("\nPrograma encerrado pelo usuário.\n");
+        exit(0);
     }
+
+    // Limpa a tela após apresentação
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+
+    menu(); // Chama o menu principal
 }
 ```
 
@@ -1403,6 +1561,72 @@ Cidade *buscarCidade(Rodovia *rodovia, char nomeCidade[])
 2. Normaliza strings para comparação (minúsculas e sem espaços)
 3. Percorre lista de cidades
 4. Retorna ponteiro para cidade encontrada ou NULL
+
+### 21. Liberação de Memória
+
+```c
+
+void liberarMemoria(Rodovia *lista)
+{
+    while (lista != NULL)
+    {
+        Rodovia *proximaRodovia = lista->proxima;
+
+        // Libera memória das cidades e seus pedágios
+        Cidade *cidadeAtual = lista->cidades;
+        while (cidadeAtual != NULL)
+        {
+            Cidade *proximaCidade = cidadeAtual->proxima;
+
+            // Libera os pedágios da cidade
+            Pedagio *pedagioAtual = cidadeAtual->pedagios;
+            while (pedagioAtual != NULL)
+            {
+                Pedagio *proximoPedagio = pedagioAtual->proximo;
+                free(pedagioAtual);
+                pedagioAtual = proximoPedagio;
+            }
+
+            free(cidadeAtual);
+            cidadeAtual = proximaCidade;
+        }
+
+        // Libera as rodovias adjacentes
+        RodoviaAdjacente *adjAtual = lista->rodovias_adjacentes;
+        while (adjAtual != NULL)
+        {
+            RodoviaAdjacente *proximaAdj = adjAtual->proxima;
+            free(adjAtual);
+            adjAtual = proximaAdj;
+        }
+
+        free(lista);
+        lista = proximaRodovia;
+    }
+}
+```
+
+**Propósito**: Gerencia a liberação de toda a memória alocada pelo sistema.
+
+**Complexidade**: O(r\*(c+p+a)), onde:
+
+- r é o número de rodovias
+- c é o número médio de cidades por rodovia
+- p é o número médio de pedágios por cidade
+- a é o número médio de rodovias adjacentes
+
+**Detalhes de Implementação**:
+
+1. Liberação Hierárquica
+
+   - Segue a estrutura de dados de forma top-down
+   - Libera primeiro as estruturas mais internas
+   - Previne memory leaks
+
+2. Tratamento de Ponteiros
+   - Mantém referências temporárias para próximos elementos
+   - Evita acessos inválidos após liberação
+   - Garante liberação completa de todas as estruturas
 
 ## Exemplos de Uso
 

@@ -1154,13 +1154,11 @@ void liberarMemoria(Rodovia *lista)
     {
         Rodovia *proximaRodovia = lista->proxima;
 
-        // Free all cities and their pedagios
         Cidade *cidadeAtual = lista->cidades;
         while (cidadeAtual != NULL)
         {
             Cidade *proximaCidade = cidadeAtual->proxima;
 
-            // Free pedagios
             Pedagio *pedagioAtual = cidadeAtual->pedagios;
             while (pedagioAtual != NULL)
             {
@@ -1173,7 +1171,6 @@ void liberarMemoria(Rodovia *lista)
             cidadeAtual = proximaCidade;
         }
 
-        // Free rodovias_adjacentes
         RodoviaAdjacente *adjAtual = lista->rodovias_adjacentes;
         while (adjAtual != NULL)
         {
