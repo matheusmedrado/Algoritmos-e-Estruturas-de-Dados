@@ -1,22 +1,22 @@
-Rodovia: BR-116
-Pedágio: R$ 32.96
-	Cidade: Sao_Paulo, Distância: 0.00
-	Cidade: Campinas, Distância: 45.00, Pedágio: R$ 10.66
-	Cidade: Curitiba, Distância: 408.00, Pedágio: R$ 12.50
-	Cidade: Lages, Distância: 676.00, Pedágio: R$ 9.80
-	Cidade: Porto_Alegre, Distância: 1146.00
+Rodovia: BR-381
+Pedágio: R$ 13.40
+	Cidade: Sao Paulo, Distância: 0.00, Pedágio: R$ 0.00
+	Cidade: Belo Horizonte, Distância: 591.00, Pedágio: R$ 5.00
+	Cidade: Governador Valadares, Distância: 898.00, Pedágio: R$ 8.40
 
 Rodovia: BR-101
 Pedágio: R$ 35.80
-	Cidade: Rio_de_Janeiro, Distância: 0.00
-	Cidade: Angra_dos_Reis, Distância: 38.00, Pedágio: R$ 10.00
-	Cidade: Santos, Distância: 280.00, Pedágio: R$ 14.20
-	Cidade: Curitiba, Distância: 852.00, Pedágio: R$ 11.60
-	Cidade: Florianopolis, Distância: 1124.00
+	Cidade: Rio de Janeiro, Distância: 0.00, Pedágio: R$ 0.00
+	Cidade: Angra dos Reis, Distância: 38.00, Pedágio: R$ 10.00
+	Cidade: Santos, Distância: 280.00, Pedágio: R$ 8.80
+	Cidade: Curitiba, Distância: 852.00, Pedágio: R$ 9.00
+	Cidade: Florianopolis, Distância: 1124.00, Pedágio: R$ 8.00
 
-Rodovia: BR-381
-Pedágio: R$ 13.40
-	Cidade: Sao_Paulo, Distância: 0.00
-	Cidade: Belo_Horizonte, Distância: 591.00, Pedágio: R$ 13.40
-	Cidade: Governador_Valadares, Distância: 898.00
+Rodovia: BR-116
+Pedágio: R$ 32.96
+	Cidade: Sao Paulo, Distância: 0.00, Pedágio: R$ 0.00
+	Cidade: Campinas, Distância: 45.00, Pedágio: R$ 7.96
+	Cidade: Curitiba, Distância: 408.00, Pedágio: R$ 8.00
+	Cidade: Lages, Distância: 676.00, Pedágio: R$ 9.00
+	Cidade: Porto Alegre, Distância: 1146.00, Pedágio: R$ 8.00
 

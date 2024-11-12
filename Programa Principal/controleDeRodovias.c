@@ -39,15 +39,21 @@ void carregarRodoviasDeArquivo(Rodovia **lista, char *nomeArquivo)
                                nomeCidade, &distancia, &pedagio) == 3)
                     {
                         Cidade *novaCidade = inserirCidade(novaRodovia, nomeCidade, distancia);
-                        if (novaCidade != NULL)
+                        if (novaCidade != NULL && pedagio > 0)
                         {
-                            novaCidade->pedagio = pedagio;
+
+                            if (novaCidade->anterior != NULL)
+                            {
+                                Pedagio *novoPedagio = (Pedagio *)malloc(sizeof(Pedagio));
+                                if (novoPedagio != NULL)
+                                {
+                                    strcpy(novoPedagio->nomeCidade, novaCidade->nomeCidade);
+                                    novoPedagio->valor = pedagio;
+                                    novoPedagio->proximo = novaCidade->anterior->pedagios;
+                                    novaCidade->anterior->pedagios = novoPedagio;
+                                }
+                            }
                         }
-                    }
-                    else if (sscanf(linha, "\tCidade: %49[^,], Distância: %f",
-                                    nomeCidade, &distancia) == 2)
-                    {
-                        inserirCidade(novaRodovia, nomeCidade, distancia);
                     }
                 }
             }
@@ -64,12 +70,12 @@ Rodovia *buscarRodovia(Rodovia *lista, char nome[])
     char nomeBusca[50], nomeAtual[50];
 
     strcpy(nomeBusca, nome);
-    toLowerStr(nomeBusca);
+    converterMinusculo(nomeBusca);
 
     while (rodoviaAtual != NULL)
     {
         strcpy(nomeAtual, rodoviaAtual->nome);
-        toLowerStr(nomeAtual);
+        converterMinusculo(nomeAtual);
 
         if (strcmp(nomeAtual, nomeBusca) == 0)
         {
@@ -85,12 +91,12 @@ Rodovia *inserirRodovia(Rodovia *lista, char nome[])
     Rodovia *atual = lista;
     char nomeAtual[50], nomeBusca[50];
     strcpy(nomeBusca, nome);
-    toLowerStr(nomeBusca);
+    converterMinusculo(nomeBusca);
 
     while (atual != NULL)
     {
         strcpy(nomeAtual, atual->nome);
-        toLowerStr(nomeAtual);
+        converterMinusculo(nomeAtual);
         if (strcmp(nomeAtual, nomeBusca) == 0)
         {
             printf("Erro: A rodovia '%s' já existe!\n", nome);
@@ -154,7 +160,7 @@ Cidade *inserirCidade(Rodovia *rodovia, char nomeCidade[], float distancia)
 
     strcpy(novaCidade->nomeCidade, nomeCidade);
     novaCidade->distancia = distancia;
-    novaCidade->pedagio = 0.0;
+    novaCidade->pedagios = NULL;
     novaCidade->proxima = NULL;
     novaCidade->anterior = NULL;
 
@@ -189,12 +195,6 @@ Cidade *inserirCidade(Rodovia *rodovia, char nomeCidade[], float distancia)
 
 void adicionarPedagio(Rodovia *rodovia, char nomeCidade1[], char nomeCidade2[], float valorPedagio)
 {
-    if (rodovia == NULL)
-    {
-        printf("Erro: Rodovia não encontrada.\n");
-        return;
-    }
-
     Cidade *cidade1 = NULL;
     Cidade *cidade2 = NULL;
     Cidade *cidadeAtual = rodovia->cidades;
@@ -218,7 +218,18 @@ void adicionarPedagio(Rodovia *rodovia, char nomeCidade1[], char nomeCidade2[], 
         return;
     }
 
-    cidade1->pedagio = valorPedagio;
+    Pedagio *novoPedagio = (Pedagio *)malloc(sizeof(Pedagio));
+    if (novoPedagio == NULL)
+    {
+        printf("Erro de alocação de memória!\n");
+        return;
+    }
+
+    strcpy(novoPedagio->nomeCidade, nomeCidade2);
+    novoPedagio->valor = valorPedagio;
+    novoPedagio->proximo = cidade1->pedagios;
+    cidade1->pedagios = novoPedagio;
+
     printf("Pedágio de R$ %.2f adicionado entre %s e %s.\n", valorPedagio, nomeCidade1, nomeCidade2);
 }
 
@@ -228,7 +239,12 @@ float calcularPedagioTotal(Cidade *cidades)
     Cidade *atual = cidades;
     while (atual != NULL)
     {
-        total += atual->pedagio;
+        Pedagio *pedagioAtual = atual->pedagios;
+        while (pedagioAtual != NULL)
+        {
+            total += pedagioAtual->valor;
+            pedagioAtual = pedagioAtual->proximo;
+        }
         atual = atual->proxima;
     }
     return total;
@@ -279,64 +295,81 @@ void removerCidade(Rodovia *rodovia, char nomeCidade[])
 void percursoEntreCidades(Rodovia *rodovia, char cidadeInicio[], char cidadeFim[])
 {
     Cidade *atual = rodovia->cidades;
-    int exibindo = 0;
+    Cidade *cidadeInicial = NULL;
+    Cidade *cidadeFinal = NULL;
     float distanciaTotal = 0;
     float pedagioTotal = 0;
-    Cidade *cidadeAnterior = NULL;
 
-    while (atual != NULL && !exibindo)
+    while (atual != NULL)
     {
         if (strcmp(atual->nomeCidade, cidadeInicio) == 0)
         {
-            exibindo = 1;
-            break;
+            cidadeInicial = atual;
+        }
+        if (strcmp(atual->nomeCidade, cidadeFim) == 0)
+        {
+            cidadeFinal = atual;
         }
         atual = atual->proxima;
     }
 
-    if (!exibindo || atual == NULL)
+    if (cidadeInicial == NULL)
     {
         printf("Cidade de início '%s' não encontrada na rodovia.\n", cidadeInicio);
         return;
     }
-
-    float distanciaInicial = atual->distancia;
-    printf("\n=== Percurso na rodovia %s ===\n", rodovia->nome);
-    printf("Início do percurso em: %s (km %.2f)\n", cidadeInicio, atual->distancia);
-
-    while (atual != NULL)
+    if (cidadeFinal == NULL)
     {
-        if (exibindo)
+        printf("Cidade de destino '%s' não encontrada na rodovia.\n", cidadeFim);
+        return;
+    }
+
+    printf("\n=== Percurso na rodovia %s ===\n", rodovia->nome);
+    printf("Início do percurso em: %s (km %.2f)\n", cidadeInicio, cidadeInicial->distancia);
+
+    atual = cidadeInicial;
+    while (atual != cidadeFinal && atual != NULL)
+    {
+        Cidade *proxima = atual->proxima;
+        if (proxima != NULL)
         {
-            if (cidadeAnterior != NULL)
+            float trechoDistancia = proxima->distancia - atual->distancia;
+            distanciaTotal += trechoDistancia;
+
+            printf("\n-> Próxima cidade: %s (km %.2f)\n", proxima->nomeCidade, proxima->distancia);
+            printf("   Distância do trecho: %.2f km\n", trechoDistancia);
+
+            Pedagio *pedagioAtual = atual->pedagios;
+            while (pedagioAtual != NULL)
             {
-                float trechoDistancia = atual->distancia - cidadeAnterior->distancia;
-                distanciaTotal += trechoDistancia;
-
-                printf("\n-> Próxima cidade: %s (km %.2f)\n", atual->nomeCidade, atual->distancia);
-                printf("   Distância do trecho: %.2f km\n", trechoDistancia);
-
-                if (cidadeAnterior->pedagio > 0)
+                if (strcmp(pedagioAtual->nomeCidade, proxima->nomeCidade) == 0)
                 {
-                    printf("   Pedágio neste trecho: R$ %.2f\n", cidadeAnterior->pedagio);
-                    pedagioTotal += cidadeAnterior->pedagio;
+                    pedagioTotal += pedagioAtual->valor;
+                    break;
+                }
+                pedagioAtual = pedagioAtual->proximo;
+            }
+
+            if (pedagioAtual == NULL)
+            {
+                pedagioAtual = proxima->pedagios;
+                while (pedagioAtual != NULL)
+                {
+                    if (strcmp(pedagioAtual->nomeCidade, atual->nomeCidade) == 0)
+                    {
+                        pedagioTotal += pedagioAtual->valor;
+                        break;
+                    }
+                    pedagioAtual = pedagioAtual->proximo;
                 }
             }
-
-            if (strcmp(atual->nomeCidade, cidadeFim) == 0)
-            {
-                printf("\n=== Fim do percurso ===\n");
-                printf("Distância total percorrida: %.2f km\n", distanciaTotal);
-                printf("Custo total em pedágios: R$ %.2f\n", pedagioTotal);
-                return;
-            }
         }
-
-        cidadeAnterior = atual;
         atual = atual->proxima;
     }
 
-    printf("Cidade de destino '%s' não encontrada após a cidade de início.\n", cidadeFim);
+    printf("\n=== Fim do percurso ===\n");
+    printf("Distância total percorrida: %.2f km\n", distanciaTotal);
+    printf("Custo total em pedágios: R$ %.2f\n", pedagioTotal);
 }
 
 void listarTodosCruzamentos(Rodovia *listaRodovias)
@@ -353,16 +386,24 @@ void listarTodosCruzamentos(Rodovia *listaRodovias)
     for (Rodovia *r1 = listaRodovias; r1 != NULL; r1 = r1->proxima)
     {
         for (Rodovia *r2 = r1->proxima; r2 != NULL; r2 = r2->proxima)
+
         {
             Cidade *cidade1 = r1->cidades;
             int encontrouCruzamento = 0;
+            char cidade1Lower[50], cidade2Lower[50];
 
             while (cidade1 != NULL)
             {
                 Cidade *cidade2 = r2->cidades;
+                strcpy(cidade1Lower, cidade1->nomeCidade);
+                converterMinusculo(cidade1Lower);
+
                 while (cidade2 != NULL)
                 {
-                    if (strcmp(cidade1->nomeCidade, cidade2->nomeCidade) == 0)
+                    strcpy(cidade2Lower, cidade2->nomeCidade);
+                    converterMinusculo(cidade2Lower);
+
+                    if (strcmp(cidade1Lower, cidade2Lower) == 0)
                     {
                         if (!encontrouCruzamento)
                         {
@@ -413,9 +454,9 @@ void imprimirRodovias(Rodovia *lista)
         {
             printf("Cidade: %s, Distância: %.2f",
                    cidadeAtual->nomeCidade, cidadeAtual->distancia);
-            if (cidadeAtual->pedagio > 0)
+            if (cidadeAtual->pedagios != NULL)
             {
-                printf(", Pedágio: R$ %.2f", cidadeAtual->pedagio);
+                printf(", Pedágio: R$ %.2f", cidadeAtual->pedagios->valor);
             }
             printf("\n");
             cidadeAtual = cidadeAtual->proxima;
@@ -455,9 +496,9 @@ void imprimirRodoviasEmArquivo(Rodovia *lista, char *nomeArquivo)
             {
                 fprintf(arquivo, "\tCidade: %s, Distância: %.2f",
                         cidadeAtual->nomeCidade, cidadeAtual->distancia);
-                if (cidadeAtual->pedagio > 0)
+                if (cidadeAtual->pedagios != NULL)
                 {
-                    fprintf(arquivo, ", Pedágio: R$ %.2f", cidadeAtual->pedagio);
+                    fprintf(arquivo, ", Pedágio: R$ %.2f", cidadeAtual->pedagios->valor);
                 }
                 fprintf(arquivo, "\n");
                 cidadeAtual = cidadeAtual->proxima;
@@ -483,13 +524,20 @@ void listarCruzamentos(Rodovia *rodovia1, Rodovia *rodovia2)
 
     Cidade *cidadeRodovia1 = rodovia1->cidades;
     int encontrouCruzamento = 0;
+    char cidade1Lower[50], cidade2Lower[50];
 
     while (cidadeRodovia1 != NULL)
     {
         Cidade *cidadeRodovia2 = rodovia2->cidades;
+        strcpy(cidade1Lower, cidadeRodovia1->nomeCidade);
+        converterMinusculo(cidade1Lower);
+
         while (cidadeRodovia2 != NULL)
         {
-            if (strcmp(cidadeRodovia1->nomeCidade, cidadeRodovia2->nomeCidade) == 0)
+            strcpy(cidade2Lower, cidadeRodovia2->nomeCidade);
+            converterMinusculo(cidade2Lower);
+
+            if (strcmp(cidade1Lower, cidade2Lower) == 0)
             {
                 printf("- %s (km %.2f na %s, km %.2f na %s)\n",
                        cidadeRodovia1->nomeCidade,
@@ -510,7 +558,7 @@ void listarCruzamentos(Rodovia *rodovia1, Rodovia *rodovia2)
     }
 }
 
-void toLowerStr(char *str)
+void converterMinusculo(char *str)
 {
     for (int i = 0; str[i]; i++)
     {
@@ -518,7 +566,7 @@ void toLowerStr(char *str)
     }
 }
 
-void apresentar_informacoes_e_obter_consentimento()
+void apresentarInformacoes()
 {
     printf("Bem-vindo ao sistema de gerenciamento de rodovias!\n");
     printf("\nPara garantir a melhor experiência, por favor, leia as seguintes informações:\n");
@@ -576,7 +624,7 @@ void menu()
         printf("2. Remover rodovia\n");
         printf("3. Inserir cidade em rodovia \n");
         printf("4. Remover cidade de rodovia\n");
-        printf("5. Ver percurso entre cidades de uma rodovia\n");
+        printf("5. Ver percurso entre duas cidades\n");
         printf("6. Verificar cruzamento entre todas as rodovias\n");
         printf("7. Imprimir lista de rodovias\n");
         printf("8. Salvar lista em arquivo\n");
@@ -597,7 +645,8 @@ void menu()
 
         case 2:
             printf("Insira o nome da rodovia a ser removida: ");
-            scanf("%49s", nomeRodovia);
+            fgets(nomeRodovia, sizeof(nomeRodovia), stdin);
+            nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
             listaRodovias = removerRodovia(listaRodovias, nomeRodovia);
             break;
 
@@ -608,28 +657,25 @@ void menu()
 
             char nomeRodoviaLower[50];
             strcpy(nomeRodoviaLower, nomeRodovia);
-            toLowerStr(nomeRodoviaLower);
+            converterMinusculo(nomeRodoviaLower);
 
             Rodovia *rodovia = buscarRodovia(listaRodovias, nomeRodovia);
             if (rodovia != NULL)
             {
-                char nomeCidade[50];
-                char nomeCidadeLower[50];
-                float distancia;
-
                 printf("Insira o nome da cidade: ");
                 fgets(nomeCidade, sizeof(nomeCidade), stdin);
                 nomeCidade[strcspn(nomeCidade, "\n")] = 0;
 
+                char nomeCidadeLower[50];
                 strcpy(nomeCidadeLower, nomeCidade);
-                toLowerStr(nomeCidadeLower);
+                converterMinusculo(nomeCidadeLower);
 
                 Cidade *atual = rodovia->cidades;
                 while (atual != NULL)
                 {
                     char cidadeAtualLower[50];
                     strcpy(cidadeAtualLower, atual->nomeCidade);
-                    toLowerStr(cidadeAtualLower);
+                    converterMinusculo(cidadeAtualLower);
 
                     if (strcmp(cidadeAtualLower, nomeCidadeLower) == 0)
                     {
@@ -738,12 +784,14 @@ void menu()
 
         case 4:
             printf("Insira o nome da rodovia para remover a cidade: ");
-            scanf("%49s", nomeRodovia);
+            fgets(nomeRodovia, sizeof(nomeRodovia), stdin);
+            nomeRodovia[strcspn(nomeRodovia, "\n")] = 0;
             rodovia = buscarRodovia(listaRodovias, nomeRodovia);
             if (rodovia != NULL)
             {
                 printf("Insira o nome da cidade a ser removida: ");
-                scanf("%49s", nomeCidade);
+                fgets(nomeCidade, sizeof(nomeCidade), stdin);
+                nomeCidade[strcspn(nomeCidade, "\n")] = 0;
                 removerCidade(rodovia, nomeCidade);
             }
             else
@@ -753,22 +801,18 @@ void menu()
             break;
 
         case 5:
-            printf("Insira o nome da rodovia: ");
-            scanf("%49s", nomeRodovia);
-            rodovia = buscarRodovia(listaRodovias, nomeRodovia);
-            if (rodovia != NULL)
-            {
-                char cidadeInicio[50], cidadeFim[50];
-                printf("Insira a cidade de início: ");
-                scanf("%49s", cidadeInicio);
-                printf("Insira a cidade de fim: ");
-                scanf("%49s", cidadeFim);
-                percursoEntreCidades(rodovia, cidadeInicio, cidadeFim);
-            }
-            else
-            {
-                printf("Rodovia não encontrada!\n");
-            }
+            conectarRodovias(listaRodovias);
+
+            char cidadeInicio[50], cidadeFim[50];
+            printf("Insira a cidade de início: ");
+            fgets(cidadeInicio, sizeof(cidadeInicio), stdin);
+            cidadeInicio[strcspn(cidadeInicio, "\n")] = 0;
+
+            printf("Insira a cidade de fim: ");
+            fgets(cidadeFim, sizeof(cidadeFim), stdin);
+            cidadeFim[strcspn(cidadeFim, "\n")] = 0;
+
+            percursoEntreRodovias(listaRodovias, cidadeInicio, cidadeFim);
             break;
 
         case 6:
@@ -784,7 +828,7 @@ void menu()
             printf("Digite o nome do novo arquivo para salvar (ex: novo_rodovias.txt): ");
             char novoArquivo[50];
             scanf("%49s", novoArquivo);
-            getchar(); // Limpa o buffer
+            getchar();
             FILE *arquivo = fopen(novoArquivo, "w");
             if (arquivo == NULL)
             {
@@ -798,7 +842,10 @@ void menu()
 
         case 9:
             printf("Insira o nome das duas rodovias para listar todos os cruzamentos:\n");
-            scanf("%49s %49s", rodovia1, rodovia2);
+            fgets(rodovia1, sizeof(rodovia1), stdin);
+            rodovia1[strcspn(rodovia1, "\n")] = 0;
+            fgets(rodovia2, sizeof(rodovia2), stdin);
+            rodovia2[strcspn(rodovia2, "\n")] = 0;
             r1 = buscarRodovia(listaRodovias, rodovia1);
             r2 = buscarRodovia(listaRodovias, rodovia2);
             if (r1 != NULL && r2 != NULL)
@@ -845,4 +892,230 @@ void menu()
     }
 
     printf("Saindo...\n");
+}
+
+void conectarRodovias(Rodovia *listaRodovias)
+{
+    for (Rodovia *r1 = listaRodovias; r1 != NULL; r1 = r1->proxima)
+    {
+        r1->rodovias_adjacentes = NULL;
+
+        for (Cidade *c1 = r1->cidades; c1 != NULL; c1 = c1->proxima)
+        {
+            for (Rodovia *r2 = listaRodovias; r2 != NULL; r2 = r2->proxima)
+
+            {
+                if (r1 != r2)
+                {
+                    for (Cidade *c2 = r2->cidades; c2 != NULL; c2 = c2->proxima)
+                    {
+                        if (strcmp(c1->nomeCidade, c2->nomeCidade) == 0)
+                        {
+                            RodoviaAdjacente *nova = malloc(sizeof(RodoviaAdjacente));
+                            strcpy(nova->nomeRodovia, r2->nome);
+                            strcpy(nova->cidadeConexao, c1->nomeCidade);
+                            nova->proxima = r1->rodovias_adjacentes;
+                            r1->rodovias_adjacentes = nova;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void percursoEntreRodovias(Rodovia *listaRodovias, char cidadeInicio[], char cidadeFim[])
+{
+    Rodovia *rodoviaInicio = NULL, *rodoviaFim = NULL;
+    Cidade *cidadeInicioPtr = NULL, *cidadeFimPtr = NULL;
+    char cidadeInicioMinuscula[50], cidadeFimMinuscula[50], cidadeAtualMinuscula[50];
+    char cidadeInicioOriginal[50], cidadeFimOriginal[50];
+
+    cidadeInicio[strcspn(cidadeInicio, "\n")] = 0;
+    cidadeFim[strcspn(cidadeFim, "\n")] = 0;
+
+    strcpy(cidadeInicioMinuscula, cidadeInicio);
+    strcpy(cidadeFimMinuscula, cidadeFim);
+    converterMinusculo(cidadeInicioMinuscula);
+    converterMinusculo(cidadeFimMinuscula);
+    removerEspacos(cidadeInicioMinuscula);
+    removerEspacos(cidadeFimMinuscula);
+
+    for (Rodovia *r = listaRodovias; r != NULL; r = r->proxima)
+    {
+        for (Cidade *c = r->cidades; c != NULL; c = c->proxima)
+        {
+            char cidadeTemp[50];
+            strcpy(cidadeTemp, c->nomeCidade);
+            char *virgula = strchr(cidadeTemp, ',');
+            if (virgula)
+                *virgula = '\0';
+
+            strcpy(cidadeAtualMinuscula, cidadeTemp);
+            converterMinusculo(cidadeAtualMinuscula);
+            removerEspacos(cidadeAtualMinuscula);
+
+            if (strcmp(cidadeAtualMinuscula, cidadeInicioMinuscula) == 0)
+            {
+                rodoviaInicio = r;
+                cidadeInicioPtr = c;
+                strcpy(cidadeInicioOriginal, cidadeTemp);
+            }
+            if (strcmp(cidadeAtualMinuscula, cidadeFimMinuscula) == 0)
+            {
+                rodoviaFim = r;
+                cidadeFimPtr = c;
+                strcpy(cidadeFimOriginal, cidadeTemp);
+            }
+        }
+    }
+
+    if (!rodoviaInicio || !rodoviaFim)
+    {
+        printf("Cidade de início ou fim não encontrada!\n");
+        return;
+    }
+
+    printf("\n=== Percurso de %s até %s ===\n", cidadeInicioOriginal, cidadeFimOriginal);
+
+    if (rodoviaInicio == rodoviaFim)
+    {
+        printf("Percurso na rodovia %s:\n", rodoviaInicio->nome);
+        percursoEntreCidades(rodoviaInicio, cidadeInicioOriginal, cidadeFimOriginal);
+        return;
+    }
+
+    RodoviaAdjacente *adj = rodoviaInicio->rodovias_adjacentes;
+    while (adj != NULL)
+    {
+        if (strcmp(adj->nomeRodovia, rodoviaFim->nome) == 0)
+        {
+            float pedagioTotal = 0.0;
+            float distanciaTotal = 0.0;
+
+            printf("Rota encontrada:\n");
+            printf("1. Início em %s pela rodovia %s\n", cidadeInicioOriginal, rodoviaInicio->nome);
+            printf("2. Conexão em %s\n", adj->cidadeConexao);
+            printf("3. Continuação pela rodovia %s até %s\n", rodoviaFim->nome, cidadeFimOriginal);
+
+            printf("\nPrimeiro trecho (%s):\n", rodoviaInicio->nome);
+            float pedagio1 = 0.0, distancia1 = 0.0;
+            calcularPercurso(rodoviaInicio, cidadeInicioOriginal, adj->cidadeConexao, &pedagio1, &distancia1);
+            pedagioTotal += pedagio1;
+            distanciaTotal += distancia1;
+
+            printf("\nSegundo trecho (%s):\n", rodoviaFim->nome);
+            float pedagio2 = 0.0, distancia2 = 0.0;
+            calcularPercurso(rodoviaFim, adj->cidadeConexao, cidadeFimOriginal, &pedagio2, &distancia2);
+            pedagioTotal += pedagio2;
+            distanciaTotal += distancia2;
+
+            printf("\n=== Resumo do percurso completo ===\n");
+            printf("Distância total da viagem: %.2f km\n", distanciaTotal);
+            printf("Custo total em pedágios: R$ %.2f\n", pedagioTotal);
+            return;
+        }
+        adj = adj->proxima;
+    }
+
+    printf("Não foi possível encontrar uma rota direta entre as cidades.\n");
+}
+
+void calcularPercurso(Rodovia *rodovia, char cidadeInicio[], char cidadeFim[], float *pedagioTotal, float *distanciaTotal)
+{
+    Cidade *atual = rodovia->cidades;
+    Cidade *cidadeInicial = NULL;
+    Cidade *cidadeFinal = NULL;
+    *pedagioTotal = 0;
+    *distanciaTotal = 0;
+
+    while (atual != NULL)
+    {
+        if (strcmp(atual->nomeCidade, cidadeInicio) == 0)
+            cidadeInicial = atual;
+        if (strcmp(atual->nomeCidade, cidadeFim) == 0)
+            cidadeFinal = atual;
+        atual = atual->proxima;
+    }
+
+    if (!cidadeInicial || !cidadeFinal)
+        return;
+
+    printf("\n=== Percurso na rodovia %s ===\n", rodovia->nome);
+    printf("Início do percurso em: %s (km %.2f)\n", cidadeInicio, cidadeInicial->distancia);
+
+    atual = cidadeInicial;
+    while (atual != cidadeFinal && atual != NULL)
+    {
+        Cidade *proxima = atual->proxima;
+        if (proxima != NULL)
+        {
+            float trechoDistancia = proxima->distancia - atual->distancia;
+            *distanciaTotal += trechoDistancia;
+
+            printf("\n-> Próxima cidade: %s (km %.2f)\n", proxima->nomeCidade, proxima->distancia);
+            printf("   Distância do trecho: %.2f km\n", trechoDistancia);
+
+            Pedagio *pedagioAtual = atual->pedagios;
+            while (pedagioAtual != NULL)
+            {
+                if (strcmp(pedagioAtual->nomeCidade, proxima->nomeCidade) == 0)
+                {
+                    *pedagioTotal += pedagioAtual->valor;
+                    break;
+                }
+                pedagioAtual = pedagioAtual->proximo;
+            }
+
+            if (pedagioAtual == NULL)
+            {
+                pedagioAtual = proxima->pedagios;
+                while (pedagioAtual != NULL)
+                {
+                    if (strcmp(pedagioAtual->nomeCidade, atual->nomeCidade) == 0)
+                    {
+                        *pedagioTotal += pedagioAtual->valor;
+                        break;
+                    }
+                    pedagioAtual = pedagioAtual->proximo;
+                }
+            }
+        }
+        atual = atual->proxima;
+    }
+
+    printf("\n=== Fim do percurso ===\n");
+    printf("Distância total percorrida: %.2f km\n", *distanciaTotal);
+    printf("Custo total em pedágios: R$ %.2f\n", *pedagioTotal);
+}
+
+void removerEspacos(char *texto)
+
+{
+    char *inicio = texto;
+    while (*inicio && isspace(*inicio))
+        inicio++;
+    if (inicio != texto)
+    {
+        memmove(texto, inicio, strlen(inicio) + 1);
+    }
+
+    int fim = strlen(texto) - 1;
+    while (fim >= 0 && isspace(texto[fim]))
+    {
+        texto[fim] = '\0';
+        fim--;
+    }
+
+    char *virgula = strchr(texto, ',');
+    if (virgula != NULL)
+    {
+        char *espacoAntesVirgula = virgula - 1;
+        while (espacoAntesVirgula > texto && isspace(*espacoAntesVirgula))
+        {
+            memmove(espacoAntesVirgula, espacoAntesVirgula + 1, strlen(espacoAntesVirgula));
+            virgula--;
+        }
+    }
 }
