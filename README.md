@@ -6,3 +6,6 @@ Trabalho final da disciplina **Algoritmo e Estrutura de Dados I**
 - **Daniel Cardoso Gentil** - 12311BCC062
 - **Matheus de Andrade Tabchoury** - 12311BCC066
 - **Matheus Medrado Ferreira** - 12311BCC054
+
+## Documentação
+Para mais informações, consulte o [Relatório do Projeto](relatorio.md).
