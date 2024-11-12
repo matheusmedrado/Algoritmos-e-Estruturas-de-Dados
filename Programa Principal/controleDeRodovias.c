@@ -145,6 +145,24 @@ Rodovia *removerRodovia(Rodovia *lista, char nome[])
         anterior->proxima = rodoviaAtual->proxima;
     }
 
+    Cidade *cidadeAtual = rodoviaAtual->cidades;
+    while (cidadeAtual != NULL)
+    {
+        Cidade *proximaCidade = cidadeAtual->proxima;
+
+        // Free all pedagios for this city
+        Pedagio *pedagioAtual = cidadeAtual->pedagios;
+        while (pedagioAtual != NULL)
+        {
+            Pedagio *proximoPedagio = pedagioAtual->proximo;
+            free(pedagioAtual);
+            pedagioAtual = proximoPedagio;
+        }
+
+        free(cidadeAtual);
+        cidadeAtual = proximaCidade;
+    }
+
     free(rodoviaAtual);
     return lista;
 }
@@ -286,6 +304,15 @@ void removerCidade(Rodovia *rodovia, char nomeCidade[])
         {
             atual->proxima->anterior = atual->anterior;
         }
+    }
+
+    // Free all pedagios before freeing the city
+    Pedagio *pedagioAtual = atual->pedagios;
+    while (pedagioAtual != NULL)
+    {
+        Pedagio *proximoPedagio = pedagioAtual->proximo;
+        free(pedagioAtual);
+        pedagioAtual = proximoPedagio;
     }
 
     free(atual);
@@ -891,6 +918,7 @@ void menu()
         }
     }
 
+    liberarMemoria(listaRodovias);
     printf("Saindo...\n");
 }
 
@@ -1117,5 +1145,44 @@ void removerEspacos(char *texto)
             memmove(espacoAntesVirgula, espacoAntesVirgula + 1, strlen(espacoAntesVirgula));
             virgula--;
         }
+    }
+}
+
+void liberarMemoria(Rodovia *lista)
+{
+    while (lista != NULL)
+    {
+        Rodovia *proximaRodovia = lista->proxima;
+
+        // Free all cities and their pedagios
+        Cidade *cidadeAtual = lista->cidades;
+        while (cidadeAtual != NULL)
+        {
+            Cidade *proximaCidade = cidadeAtual->proxima;
+
+            // Free pedagios
+            Pedagio *pedagioAtual = cidadeAtual->pedagios;
+            while (pedagioAtual != NULL)
+            {
+                Pedagio *proximoPedagio = pedagioAtual->proximo;
+                free(pedagioAtual);
+                pedagioAtual = proximoPedagio;
+            }
+
+            free(cidadeAtual);
+            cidadeAtual = proximaCidade;
+        }
+
+        // Free rodovias_adjacentes
+        RodoviaAdjacente *adjAtual = lista->rodovias_adjacentes;
+        while (adjAtual != NULL)
+        {
+            RodoviaAdjacente *proximaAdj = adjAtual->proxima;
+            free(adjAtual);
+            adjAtual = proximaAdj;
+        }
+
+        free(lista);
+        lista = proximaRodovia;
     }
 }

@@ -3,6 +3,6 @@
 
 int main()
 {
-    apresentar_informacoes_e_obter_consentimento();
+    apresentarInformacoes();
     return 0;
 }

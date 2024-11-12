@@ -42,7 +42,7 @@ void adicionarPedagio(Rodovia *rodovia, char nomeCidade1[], char nomeCidade2[], 
 float calcularPedagioTotal(Cidade *cidades);
 void removerCidade(Rodovia *rodovia, char nomeCidade[]);
 void percursoCidades(Rodovia *rodovia, char cidadeInicio[], char cidadeFim[]);
-void listarCruzamentos(Rodovia *listaRodovias);
+void listarCruzamentos(Rodovia *rodovia1, Rodovia *rodovia2);
 void imprimirRodovias(Rodovia *lista);
 void salvarRodoviasArquivo(Rodovia *lista, char *nomeArquivo);
 void listarCruzamentosEspecificos(Rodovia *rodovia1, Rodovia *rodovia2);
@@ -53,5 +53,6 @@ void conectarRodovias(Rodovia *listaRodovias);
 void percursoEntreRodovias(Rodovia *listaRodovias, char cidadeInicio[], char cidadeFim[]);
 void calcularPercurso(Rodovia *rodovia, char cidadeInicio[], char cidadeFim[], float *totalPedagio, float *totalDistancia);
 void removerEspacos(char *texto);
+void liberarMemoria(Rodovia *lista);
 
 #endif
