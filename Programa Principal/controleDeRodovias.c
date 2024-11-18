@@ -306,7 +306,6 @@ void removerCidade(Rodovia *rodovia, char nomeCidade[])
         }
     }
 
-    // Free all pedagios before freeing the city
     Pedagio *pedagioAtual = atual->pedagios;
     while (pedagioAtual != NULL)
     {
