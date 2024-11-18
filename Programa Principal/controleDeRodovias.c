@@ -150,7 +150,7 @@ Rodovia *removerRodovia(Rodovia *lista, char nome[])
     {
         Cidade *proximaCidade = cidadeAtual->proxima;
 
-        // Free all pedagios for this city
+
         Pedagio *pedagioAtual = cidadeAtual->pedagios;
         while (pedagioAtual != NULL)
         {
